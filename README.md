@@ -3,10 +3,6 @@
 
 测试markdown
 
+## 欢迎使用 MarkdownPad 2 ##
 
-
-[^1]: This is my first footnote
-
-[^n]: Visit http://example.com
-
-[^n]: A final footnote
+**MarkdownPad** 是 Windows 平台上一个功能完善的 Markdown 编辑器。
