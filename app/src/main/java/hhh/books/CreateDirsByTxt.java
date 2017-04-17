@@ -5,31 +5,32 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 import org.apache.commons.io.FileUtils;
 
 public class CreateDirsByTxt {
+
+
+
+
+
+	public final static String destFileDir = "D:/3H/compMsg/brightoil/function/books/Android安全技术揭秘与防范";
+
+	public final static String copyFilePath = "D:/3H/compMsg/brightoil/template/freemind/temp.mm";
+	/**
+	 * 该文本被替换时，是替换整行的
+	 */
+	public final static String copyFilePathReplaceStr = "<node CREATED=\"1472613963222\" ID=\"ID_698403439\" MODIFIED=\"1472613981311\" TEXT=";
+
 	public static void main(String[] args) {
-		
-		
-		
-		String copyFilePath = "D:/3H/compMsg/brightoil/template/freemind/temp.mm";
-		
-		String destFileDir = "D:/3H/compMsg/brightoil/function/books/Android安全技术揭秘与防范";
+
 		//该文件文本内容必须使用UTF-8
 		String txtFileName = "目录.txt";
-		
+
 		String txtFilePath = String.format("%s/%s", destFileDir,txtFileName);
-		
+
 		File file = new File(txtFilePath);
-		
-		
+
 		printFileContent(file,new RunParam() {
 			@Override
 			public Object run(Object o0,Object o1) {
@@ -39,9 +40,9 @@ public class CreateDirsByTxt {
 				if (o1 == null) {
 					return null;
 				}
-				
+
 				BufferedReader reader = (BufferedReader) o0;
-				
+
 				String currentLineStr = o1.toString();
 //				try {
 //					currentLineStr = new String(o1.toString().getBytes("UTF-8"));
@@ -49,23 +50,23 @@ public class CreateDirsByTxt {
 //					// TODO Auto-generated catch block
 //					e1.printStackTrace();
 //				}
-				
+
 				boolean isChapter = isChapter(currentLineStr);
-				
+
 				String chapterStr = currentLineStr;
-				
+
 				if (isChapter) {
 					System.out.println(chapterStr);
 					File chapterDir = new File(destFileDir,chapterStr);
 					if (!chapterDir.exists()) {
 						chapterDir.mkdir();
 					}
-					
+
 					try {
 						currentLineStr = handlerReadStrSpecialStr(reader);
-						
+
 						while (isSection(currentLineStr, copyFilePath, chapterDir.getAbsolutePath())) {
-							
+
 							currentLineStr = handlerReadStrSpecialStr(reader);
 
 						}
@@ -79,15 +80,15 @@ public class CreateDirsByTxt {
 				return currentLineStr;
 			}
 
-			
-		});    
+
+		});
 	}
-	
+
 	private static String handlerReadStrSpecialStr(BufferedReader reader) throws IOException {
 		String resultStr = null;
 		resultStr =	reader.readLine();
 		if (resultStr!=null) {
-			resultStr = resultStr.replaceAll("/", "-").replaceAll("\\t","").replaceAll(" ","").trim();
+			resultStr = resultStr.replaceAll("/", "-").replaceAll("\\t","").trim();
 		}
 		return resultStr;
 	}
@@ -103,7 +104,13 @@ public class CreateDirsByTxt {
 		
 		if (isSection) {
 			System.out.println(readLineStr);
-			FileUtils.copyFile(new File(srcFilePath), new File(destFileDir,readLineStr+".mm"));
+			File srcFile = new File(srcFilePath);
+			File targetFile = new File(destFileDir,readLineStr+".mm");
+			//先复制到目的文件夹
+			FileUtils.copyFile(srcFile,targetFile);
+			//更改目的文件内容
+			String targetStr = String.format("%s\"%s\"/>",copyFilePathReplaceStr,readLineStr);
+			TextFileUtils.updateFileTextContent(targetFile.getAbsolutePath(),copyFilePathReplaceStr,targetStr);
 		}
 		
 		testLast(readLineStr);
