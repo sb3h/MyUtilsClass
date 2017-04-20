@@ -6,15 +6,13 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
 public class CreateDirsByTxt {
-
-
-
-
 
 	public final static String destFileDir = "D:/3H/compMsg/brightoil/function/books/Android安全技术揭秘与防范";
 
@@ -58,25 +56,7 @@ public class CreateDirsByTxt {
 				String chapterStr = currentLineStr;
 
 				if (isChapter) {
-					System.out.println(chapterStr);
-					File chapterDir = new File(destFileDir,chapterStr);
-					String chapterDirStr = chapterDir.getAbsolutePath();
-					if (!chapterDir.exists()) {
-						chapterDir.mkdir();
-					}
-					currentLineStr = handlerReadStrSpecialStr(reader);
-					String sectionStr = "";
-					while(isSection(reader,currentLineStr, copyFilePath, chapterDirStr)){
-						sectionStr = currentLineStr;
-						currentLineStr = handlerReadStrSpecialStr(reader);
-						//如果，想放在同一目录的话就传入“章”目录，而不是传入该“章节”目录
-						while(isSectionBar(currentLineStr, copyFilePath,
-								chapterDir
-//								new File(chapterDirStr, sectionStr)
-								)){
-							currentLineStr = handlerReadStrSpecialStr(reader);
-						}
-					}
+					currentLineStr = createChapter(reader, chapterStr);
 				}else {
 //					System.out.println("无法进入下一行");
 					throw new Exception("无法进入下一行");
@@ -88,6 +68,45 @@ public class CreateDirsByTxt {
 		});
 	}
 
+	private static String createChapter(BufferedReader reader, String chapterStr) throws IOException, ParseException {
+		String currentLineStr;
+		System.out.println("章:"+chapterStr);
+		File chapterDir = new File(destFileDir,chapterStr);
+		String chapterDirStr = chapterDir.getAbsolutePath();
+		if (!chapterDir.exists()) {
+            chapterDir.mkdir();
+        }
+		currentLineStr = handlerReadStrSpecialStr(reader);
+		String sectionStr = "";
+		currentLineStr = createSection(reader, currentLineStr, chapterDir, chapterDirStr);
+		return currentLineStr;
+	}
+
+	private static String createSection(BufferedReader reader, String currentLineStr, File chapterDir, String chapterDirStr) throws IOException, ParseException {
+		String sectionStr;
+		while(isSection(reader,currentLineStr, copyFilePath, chapterDirStr)){
+            sectionStr = currentLineStr;
+            currentLineStr = handlerReadStrSpecialStr(reader);
+            //如果，想放在同一目录的话就传入“章”目录，而不是传入该“章节”目录
+            List<String> sectionBar = new ArrayList<String>();
+			currentLineStr = createSectionBar(reader, currentLineStr, chapterDir, sectionBar);
+			//因为处理位置追加，过于麻烦，只好引入xml来定位，在进行追加
+            System.out.println("sectionBar:"+sectionBar);
+        }
+		return currentLineStr;
+	}
+
+	private static String createSectionBar(BufferedReader reader, String currentLineStr, File chapterDir, List<String> sectionBar) throws IOException, ParseException {
+		while(isSectionBar(currentLineStr, copyFilePath,
+                chapterDir
+//								new File(chapterDirStr, sectionStr)
+                )){
+            sectionBar.add(currentLineStr);
+            currentLineStr = handlerReadStrSpecialStr(reader);
+        }
+		return currentLineStr;
+	}
+
 	private static String handlerReadStrSpecialStr(BufferedReader reader) throws IOException {
 		String resultStr = null;
 		resultStr =	reader.readLine();
@@ -97,6 +116,9 @@ public class CreateDirsByTxt {
 		return resultStr;
 	}
 
+	/**
+	 * 每一行的格式
+	 */
 	private final static MessageFormat lineFormat = new MessageFormat("{0} {1} {2}");
 
 	protected static boolean isSection(BufferedReader reader,String readLineStr,String srcFilePath,String destFileDir)  {
@@ -150,7 +172,7 @@ public class CreateDirsByTxt {
 		String sectionBarNumStr = sectionBarStrs[0].toString();
 
 		isSectionBar = sectionBarNumStr.matches("\\d+\\.\\d+\\.\\d+");
-		System.out.println("isSectionBar1:"+isSectionBar);
+//		System.out.println("isSectionBar1:"+isSectionBar);
 
 		if (isSectionBar) {
             if (!sectionDir.exists()) {
@@ -175,14 +197,6 @@ public class CreateDirsByTxt {
 			e.printStackTrace();
 		}
 	}
-
-	private static void testLast(String readLineStr) {
-		String endStr = "7.8 本章总结 306";
-		if (endStr.equals(readLineStr)) {
-			System.out.println("End");
-		}
-	}
-
 
 	/**
 	 * 因为有些时候，因为文本编码问题，
