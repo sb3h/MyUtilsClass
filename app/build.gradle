@@ -19,7 +19,7 @@ repositories {
 dependencies {
 //    compile fileTree(include: '*.jar', dir: 'libs')
 
-    compile "jdom:jdom:1.0"
+    compile "org.dom4j:dom4j:2.0.0"
     compile "commons-io:commons-io:2.5"
     compile "commons-lang:commons-lang:2.5"
 //    compile rootProject.ext.rxJava

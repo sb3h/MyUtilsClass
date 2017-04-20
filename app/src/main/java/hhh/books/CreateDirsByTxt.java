@@ -12,6 +12,9 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
+import hhh.books.bean.MMDom4jXml;
+
+
 public class CreateDirsByTxt {
 
 	public final static String destFileDir = "D:/3H/compMsg/brightoil/function/books/Android安全技术揭秘与防范";
@@ -22,51 +25,7 @@ public class CreateDirsByTxt {
 	 */
 	public final static String copyFilePathReplaceStr = "<node CREATED=\"1472613963222\" ID=\"ID_698403439\" MODIFIED=\"1472613981311\" TEXT=";
 
-	public static void main(String[] args) {
 
-		//该文件文本内容必须使用UTF-8
-		String txtFileName = "目录.txt";
-
-		String txtFilePath = String.format("%s/%s", destFileDir,txtFileName);
-
-		File file = new File(txtFilePath);
-
-		printFileContent(file,new RunParam() {
-			@Override
-			public Object run(Object o0,Object o1) throws Exception {
-				if (o0 == null) {
-					return null;
-				}
-				if (o1 == null) {
-					return null;
-				}
-
-				BufferedReader reader = (BufferedReader) o0;
-
-				String currentLineStr = o1.toString();
-//				try {
-//					currentLineStr = new String(o1.toString().getBytes("UTF-8"));
-//				} catch (UnsupportedEncodingException e1) {
-//					// TODO Auto-generated catch block
-//					e1.printStackTrace();
-//				}
-
-				boolean isChapter = isChapter(currentLineStr);
-
-				String chapterStr = currentLineStr;
-
-				if (isChapter) {
-					currentLineStr = createChapter(reader, chapterStr);
-				}else {
-//					System.out.println("无法进入下一行");
-					throw new Exception("无法进入下一行");
-				}
-				return currentLineStr;
-			}
-
-
-		});
-	}
 
 	private static String createChapter(BufferedReader reader, String chapterStr) throws IOException, ParseException {
 		String currentLineStr;
@@ -88,11 +47,20 @@ public class CreateDirsByTxt {
             sectionStr = currentLineStr;
             currentLineStr = handlerReadStrSpecialStr(reader);
             //如果，想放在同一目录的话就传入“章”目录，而不是传入该“章节”目录
-            List<String> sectionBar = new ArrayList<String>();
-			currentLineStr = createSectionBar(reader, currentLineStr, chapterDir, sectionBar);
+            List<String> sectionBars = new ArrayList<String>();
+			currentLineStr = createSectionBar(reader, currentLineStr, chapterDir, sectionBars);
 			//因为处理位置追加，过于麻烦，只好引入xml来定位，在进行追加
-            System.out.println("sectionBar:"+sectionBar);
-        }
+            System.out.println("sectionBars:"+sectionBars);
+			if (!isChapter(sectionStr)) {
+				File sectionFile = new File(chapterDirStr,sectionStr+".mm");
+				System.out.println("sectionFile.getAbsolutePath():"+sectionFile.getAbsolutePath());
+				MMDom4jXml mmXml = new MMDom4jXml(sectionFile.getAbsolutePath());
+				for (int i = 0; i < sectionBars.size(); i++) {
+					String sectionBar = sectionBars.get(i);
+					mmXml.addNode(sectionBar);
+				}
+			}
+		}
 		return currentLineStr;
 	}
 
@@ -191,7 +159,7 @@ public class CreateDirsByTxt {
 			//先复制到目的文件夹
 			FileUtils.copyFile(srcFile,targetFile);
 			//更改目的文件内容
-			String targetStr = String.format("%s\"%s\"/>",copyFilePathReplaceStr,readLineStr);
+			String targetStr = String.format("%s\"%s\">",copyFilePathReplaceStr,readLineStr);
 			TextFileUtils.updateFileTextContent(targetFile.getAbsolutePath(),copyFilePathReplaceStr,targetStr);
 		}catch (Exception e){
 			e.printStackTrace();
@@ -235,5 +203,51 @@ public class CreateDirsByTxt {
 	
 	public interface RunParam{
 		public abstract Object run(Object o0,Object o1) throws Exception;
+	}
+
+	public static void main(String[] args) {
+
+		//该文件文本内容必须使用UTF-8
+		String txtFileName = "目录.txt";
+
+		String txtFilePath = String.format("%s/%s", destFileDir,txtFileName);
+
+		File file = new File(txtFilePath);
+
+		printFileContent(file,new RunParam() {
+			@Override
+			public Object run(Object o0,Object o1) throws Exception {
+				if (o0 == null) {
+					return null;
+				}
+				if (o1 == null) {
+					return null;
+				}
+
+				BufferedReader reader = (BufferedReader) o0;
+
+				String currentLineStr = o1.toString();
+//				try {
+//					currentLineStr = new String(o1.toString().getBytes("UTF-8"));
+//				} catch (UnsupportedEncodingException e1) {
+//					// TODO Auto-generated catch block
+//					e1.printStackTrace();
+//				}
+
+				boolean isChapter = isChapter(currentLineStr);
+
+				String chapterStr = currentLineStr;
+
+				if (isChapter) {
+					currentLineStr = createChapter(reader, chapterStr);
+				}else {
+//					System.out.println("无法进入下一行");
+					throw new Exception("无法进入下一行");
+				}
+				return currentLineStr;
+			}
+
+
+		});
 	}
 }
