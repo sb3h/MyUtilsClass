@@ -2,11 +2,13 @@ package hhh.books;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.text.ParseException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 
 public class CreateDirsByTxt {
 
@@ -33,7 +35,7 @@ public class CreateDirsByTxt {
 
 		printFileContent(file,new RunParam() {
 			@Override
-			public Object run(Object o0,Object o1) {
+			public Object run(Object o0,Object o1) throws Exception {
 				if (o0 == null) {
 					return null;
 				}
@@ -58,24 +60,26 @@ public class CreateDirsByTxt {
 				if (isChapter) {
 					System.out.println(chapterStr);
 					File chapterDir = new File(destFileDir,chapterStr);
+					String chapterDirStr = chapterDir.getAbsolutePath();
 					if (!chapterDir.exists()) {
 						chapterDir.mkdir();
 					}
-
-					try {
+					currentLineStr = handlerReadStrSpecialStr(reader);
+					String sectionStr = "";
+					while(isSection(reader,currentLineStr, copyFilePath, chapterDirStr)){
+						sectionStr = currentLineStr;
 						currentLineStr = handlerReadStrSpecialStr(reader);
-
-						while (isSection(currentLineStr, copyFilePath, chapterDir.getAbsolutePath())) {
-
+						//如果，想放在同一目录的话就传入“章”目录，而不是传入该“章节”目录
+						while(isSectionBar(currentLineStr, copyFilePath,
+								chapterDir
+//								new File(chapterDirStr, sectionStr)
+								)){
 							currentLineStr = handlerReadStrSpecialStr(reader);
-
 						}
-					} catch (Exception e) {
-						System.err.println(e);
-						e.printStackTrace();
-											}
+					}
 				}else {
-					System.out.println("无法进入下一行");
+//					System.out.println("无法进入下一行");
+					throw new Exception("无法进入下一行");
 				}
 				return currentLineStr;
 			}
@@ -93,16 +97,72 @@ public class CreateDirsByTxt {
 		return resultStr;
 	}
 
-	protected static boolean isSection(String readLineStr,String srcFilePath,String destFileDir) throws IOException {
-		if (isNull(readLineStr)) {
+	private final static MessageFormat lineFormat = new MessageFormat("{0} {1} {2}");
+
+	protected static boolean isSection(BufferedReader reader,String readLineStr,String srcFilePath,String destFileDir)  {
+		if (StringUtils.isEmpty(readLineStr)) {
 			return false;
 		}
-		String headStr = readLineStr.substring(0, 1);
-		String numRe = "(-?\\d+)(\\.\\d+)?";
-		
-		boolean isSection = headStr.matches(numRe);
-		
-		if (isSection) {
+		boolean isSection = false;
+		try {
+			Object[] strs = lineFormat.parse(readLineStr);
+			String sectionNumStr = strs[0].toString();
+
+			isSection = sectionNumStr.matches("\\d+\\.\\d+");
+
+			if (isSection) {
+				String sectionStr = readLineStr;
+				createMMFile(sectionStr, srcFilePath, destFileDir);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+//		String headStr = readLineStr.substring(0, 1);
+//		String numRe = "(-?\\d+)(\\.\\d+)?";
+//
+//		isSection = headStr.matches(numRe);
+//
+//		if (isSection) {
+//			createMMFile(readLineStr, srcFilePath, destFileDir);
+//		}
+//
+//		testLast(readLineStr);
+//
+		return isSection;
+	}
+
+	/**
+	 * 是否 章小节
+	 * @param currentLineStr
+	 * @param srcFilePath
+	 * @param sectionDir
+	 * @return
+	 * @throws IOException
+	 * @throws ParseException
+	 */
+	private static boolean isSectionBar(String currentLineStr, String srcFilePath, File sectionDir ) throws IOException, ParseException {
+		if (StringUtils.isEmpty(currentLineStr)) {
+			return false;
+		}
+		Object[] sectionBarStrs = lineFormat.parse(currentLineStr);
+		boolean isSectionBar = false;
+		String sectionBarNumStr = sectionBarStrs[0].toString();
+
+		isSectionBar = sectionBarNumStr.matches("\\d+\\.\\d+\\.\\d+");
+		System.out.println("isSectionBar1:"+isSectionBar);
+
+		if (isSectionBar) {
+            if (!sectionDir.exists()) {
+				sectionDir.mkdirs();
+            }
+			createMMFile(currentLineStr, srcFilePath, sectionDir.getAbsolutePath());
+        }
+        return isSectionBar;
+	}
+
+	private static void createMMFile(String readLineStr, String srcFilePath, String destFileDir)  {
+		try{
 			System.out.println(readLineStr);
 			File srcFile = new File(srcFilePath);
 			File targetFile = new File(destFileDir,readLineStr+".mm");
@@ -111,11 +171,9 @@ public class CreateDirsByTxt {
 			//更改目的文件内容
 			String targetStr = String.format("%s\"%s\"/>",copyFilePathReplaceStr,readLineStr);
 			TextFileUtils.updateFileTextContent(targetFile.getAbsolutePath(),copyFilePathReplaceStr,targetStr);
+		}catch (Exception e){
+			e.printStackTrace();
 		}
-		
-		testLast(readLineStr);
-		
-		return isSection;
 	}
 
 	private static void testLast(String readLineStr) {
@@ -125,9 +183,7 @@ public class CreateDirsByTxt {
 		}
 	}
 
-	private static boolean isNull(String readLineStr) {
-		return readLineStr == null||1 > readLineStr.length();
-	}
+
 	/**
 	 * 因为有些时候，因为文本编码问题，
 	 * 导致获取第一位字符是其他字符，又因为通常章节都包含“第”字
@@ -157,15 +213,13 @@ public class CreateDirsByTxt {
             	currentLineStr = (o!=null?String.valueOf(o):null);
 //                str = reader.readLine();    
             }    
-        } catch (FileNotFoundException e) {   
+        } catch (Exception e) {
             //当抛出多个异常时，子异常当在父异常前抛出。  
-            e.printStackTrace();    
-        } catch (IOException e) {    
             e.printStackTrace();    
         }
 	}
 	
 	public interface RunParam{
-		public abstract Object run(Object o0,Object o1);
+		public abstract Object run(Object o0,Object o1) throws Exception;
 	}
 }
