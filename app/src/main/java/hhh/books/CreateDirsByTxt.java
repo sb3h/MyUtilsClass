@@ -17,9 +17,9 @@ import hhh.books.bean.MMDom4jXml;
 
 public class CreateDirsByTxt {
 
-	public final static String destFileDir = "D:/3H/compMsg/brightoil/function/books/Android安全技术揭秘与防范";
+	public final static String destFileDir = "D:/3H/mm/function/platforms/bigdata/framework/spark/books/spark核心源码分析与开发实战";
 
-	public final static String copyFilePath = "D:/3H/compMsg/brightoil/template/freemind/temp.mm";
+	public final static String copyFilePath = "D:/3H/mm/template/freemind/temp.mm";
 	/**
 	 * 该文本被替换时，是替换整行的
 	 */
@@ -81,13 +81,15 @@ public class CreateDirsByTxt {
 		if (resultStr!=null) {
 			resultStr = resultStr.replaceAll("/", "-").replaceAll("\\t","").trim();
 		}
+		System.out.println("handlerReadStrSpecialStrresultStr:"+resultStr);
 		return resultStr;
 	}
 
 	/**
 	 * 每一行的格式
 	 */
-	private final static MessageFormat lineFormat = new MessageFormat("{0} {1} {2}");
+//	private final static MessageFormat lineFormat = new MessageFormat("{0} {1} {2}");
+	private final static MessageFormat lineFormat = new MessageFormat("{0} {1}");
 
 	protected static boolean isSection(BufferedReader reader,String readLineStr,String srcFilePath,String destFileDir)  {
 		if (StringUtils.isEmpty(readLineStr)) {
@@ -175,7 +177,7 @@ public class CreateDirsByTxt {
 	* @param readLineStr
 	* @return
 	 */
-	protected static boolean isChapter(String readLineStr) {
+	public static boolean isChapter(String readLineStr) {
 		if (1 > readLineStr.length()) {
 			return false;
 		}
@@ -186,18 +188,18 @@ public class CreateDirsByTxt {
 	}
 
 	private static void printFileContent(File file, RunParam runnable) {
-		try {    
-            FileReader fr = new FileReader(file);    
-            BufferedReader reader = new BufferedReader(fr);    
-            String currentLineStr = handlerReadStrSpecialStr(reader);    
-            while (currentLineStr != null) {    
+		try {
+            FileReader fr = new FileReader(file);
+            BufferedReader reader = new BufferedReader(fr);
+            String currentLineStr = handlerReadStrSpecialStr(reader);
+            while (currentLineStr != null) {
             	Object o = runnable.run(reader,currentLineStr);
             	currentLineStr = (o!=null?String.valueOf(o):null);
-//                str = reader.readLine();    
-            }    
+//                str = reader.readLine();
+            }
         } catch (Exception e) {
-            //当抛出多个异常时，子异常当在父异常前抛出。  
-            e.printStackTrace();    
+            //当抛出多个异常时，子异常当在父异常前抛出。
+            e.printStackTrace();
         }
 	}
 	
@@ -208,7 +210,7 @@ public class CreateDirsByTxt {
 	public static void main(String[] args) {
 
 		//该文件文本内容必须使用UTF-8
-		String txtFileName = "目录.txt";
+		String txtFileName = "目录2.txt";
 
 		String txtFilePath = String.format("%s/%s", destFileDir,txtFileName);
 
@@ -237,11 +239,14 @@ public class CreateDirsByTxt {
 				boolean isChapter = isChapter(currentLineStr);
 
 				String chapterStr = currentLineStr;
-
+				System.out.println("chapterStr:"+chapterStr);
 				if (isChapter) {
 					currentLineStr = createChapter(reader, chapterStr);
-				}else {
+				}else if(StringUtils.isEmpty(currentLineStr)) {
 //					System.out.println("无法进入下一行");
+					currentLineStr = handlerReadStrSpecialStr(reader);
+					return currentLineStr;
+				}else{
 					throw new Exception("无法进入下一行");
 				}
 				return currentLineStr;
